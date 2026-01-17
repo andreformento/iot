@@ -10,7 +10,11 @@
 #include "secrets.h"
 
 static const int LED_PIN = 4;
+static const int PHOTO_PIN = 34;  // ADC pin for photoresistor
+static const int LIGHT_THRESHOLD = 2000;  // Adjust based on your sensor
+
 static bool ledState = false;
+static bool lastLightState = false;  // Track light presence
 
 WebServer server(80);
 
@@ -104,4 +108,25 @@ void setup() {
 
 void loop() {
   server.handleClient();
+
+  static unsigned long lastCheck = 0;
+  unsigned long now = millis();
+
+  // Check for light state changes every 100ms
+  if (now - lastCheck > 100) {
+    int lightValue = analogRead(PHOTO_PIN);
+    bool hasLight = lightValue < LIGHT_THRESHOLD;  // Inverted logic for voltage divider
+
+    if (hasLight != lastLightState) {
+      lastLightState = hasLight;
+
+      if (hasLight) {
+        Serial.println("Light detected!");
+      } else {
+        Serial.println("Light turned off");
+      }
+    }
+
+    lastCheck = now;
+  }
 }

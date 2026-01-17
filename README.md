@@ -78,4 +78,15 @@ Response:
 ## Hardware
 
 - **LED Pin:** GPIO 4
+- **Photoresistor Pin:** GPIO 34 (ADC)
 - **Port:** 80
+
+### Photoresistor Wiring
+
+Connect your photoresistor in a voltage divider configuration:
+
+```
+3.3V ----[ 10kΩ Resistor ]---- GPIO 34 ----[ Photoresistor ]---- GND
+```
+
+**Note:** GPIO 34 is used because it's an ADC-capable pin on ESP32. Adjust `LIGHT_THRESHOLD` constant in the code (default 2000) based on your sensor readings shown in Serial Monitor.
