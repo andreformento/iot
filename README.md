@@ -1,10 +1,10 @@
-# ESP32 LED REST API
+# IoT Agent
 
-LED control via HTTP REST API on ESP32 with optional web interface.
+Edge device agent for ESP32 that monitors environmental sensors and provides REST API control. Collects data from the environment and communicates with cloud services.
 
 ## Setup
 
-1. Copy `wifi-example-light/secrets.h.example` to `wifi-example-light/secrets.h`
+1. Copy `iot-agent/secrets.h.example` to `iot-agent/secrets.h`
 2. Configure your WiFi credentials in `secrets.h`
 3. Upload the code to the ESP32
 4. Note the IP displayed in the Serial Monitor

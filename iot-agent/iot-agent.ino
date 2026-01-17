@@ -1,7 +1,13 @@
 
 
 /*
-  ESP32 REST API - LED Control (GPIO 4)
+  IoT Agent - ESP32 Edge Device
+
+  Environmental monitoring and actuator control agent.
+  - LED control (GPIO 4)
+  - Light sensor monitoring (GPIO 34)
+  - REST API for remote control
+
   Wi-Fi credentials are stored in secrets.h (not versioned)
 */
 
@@ -24,7 +30,7 @@ static String htmlPage() {
 
   return R"=====(<!doctype html><html lang='en'><head>
 <meta charset='utf-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/>
-<title>ESP32 LED</title>
+<title>IoT Agent</title>
 <style>
 body{font-family:Arial,sans-serif;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#0b1220;color:#e6eefc}
 .card{background:#121a2b;border:1px solid #22304d;border-radius:16px;padding:22px;max-width:420px;width:92%;box-shadow:0 10px 30px rgba(0,0,0,.35)}
@@ -103,7 +109,7 @@ void setup() {
   server.on("/on", HTTP_POST, handleOn);
   server.on("/off", HTTP_POST, handleOff);
   server.begin();
-  Serial.println("Server started - Web Interface + REST API on port 80.");
+  Serial.println("IoT Agent started - Web Interface + REST API on port 80.");
 }
 
 void loop() {
