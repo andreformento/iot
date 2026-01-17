@@ -1,92 +1,93 @@
-# IoT Agent
+# IoT System
 
-Edge device agent for ESP32 that monitors environmental sensors and provides REST API control. Collects data from the environment and communicates with cloud services.
+ESP32 edge devices with NestJS API gateway.
 
-## Setup
-
-1. Copy `iot-agent/secrets.h.example` to `iot-agent/secrets.h`
-2. Configure your WiFi credentials in `secrets.h`
-3. Upload the code to the ESP32
-4. Note the IP displayed in the Serial Monitor
-
-## Web Interface
-
-Access via browser:
+## Architecture
 
 ```
-http://192.168.1.100/
+Browser → API Server (NestJS) → IoT Agent (ESP32)
+          Port 3000               Port 80
+          Web UI + REST           Pure REST
 ```
 
-You will see a visual interface to control the LED.
+## Components
+
+**iot-api/** - NestJS API server with web interface
+**iot-agent/** - ESP32 firmware (LED + light sensor)
+
+## Quick Start
+
+### ESP32 Setup
+
+```bash
+cd iot-agent
+cp secrets.h.example secrets.h
+# Edit secrets.h with WiFi credentials
+# Upload via Arduino IDE
+```
+
+### Start API
+
+```bash
+make install
+make dev
+```
+
+Open `http://localhost:3000`, enter ESP32 IP, control LED.
+
+## Commands
+
+```bash
+make help         # Show all commands
+make install      # Install dependencies
+make dev          # Start dev server
+make build        # Build for production
+make test         # Run tests
+make test-all     # Run all tests
+make clean        # Clean artifacts
+```
 
 ## API Endpoints
 
-Set your ESP32 IP:
+### GET /health
+Health check.
 
 ```bash
-export ESP32_IP=192.168.1.100
+curl "http://localhost:3000/health"
 ```
 
-### GET /state
-Returns the current LED state.
+### GET /devices/:ip/state
+Get LED state.
 
 ```bash
-curl --max-time 2 "http://$ESP32_IP/state"
+curl "http://localhost:3000/devices/192.168.0.15/state"
 ```
 
-Response:
-```json
-{"on":false,"pin":4}
-```
+Response: `{"on":false,"pin":4}`
 
-### POST /toggle
-Toggles the LED state (on/off).
+### POST /devices/:ip/toggle
+Toggle LED.
 
 ```bash
-curl --max-time 2 -X POST "http://$ESP32_IP/toggle"
+curl -X POST "http://localhost:3000/devices/192.168.0.15/toggle"
 ```
 
-Response:
-```json
-{"on":true,"action":"toggled"}
-```
-
-### POST /on
-Turns the LED on.
+### POST /devices/:ip/on
+Turn LED on.
 
 ```bash
-curl --max-time 2 -X POST "http://$ESP32_IP/on"
+curl -X POST "http://localhost:3000/devices/192.168.0.15/on"
 ```
 
-Response:
-```json
-{"on":true,"action":"turned_on"}
-```
-
-### POST /off
-Turns the LED off.
+### POST /devices/:ip/off
+Turn LED off.
 
 ```bash
-curl --max-time 2 -X POST "http://$ESP32_IP/off"
-```
-
-Response:
-```json
-{"on":false,"action":"turned_off"}
+curl -X POST "http://localhost:3000/devices/192.168.0.15/off"
 ```
 
 ## Hardware
 
-- **LED Pin:** GPIO 4
-- **Photoresistor Pin:** GPIO 34 (ADC)
-- **Port:** 80
-
-### Photoresistor Wiring
-
-Connect your photoresistor in a voltage divider configuration:
-
-```
-3.3V ----[ 10kΩ Resistor ]---- GPIO 34 ----[ Photoresistor ]---- GND
-```
-
-**Note:** GPIO 34 is used because it's an ADC-capable pin on ESP32. Adjust `LIGHT_THRESHOLD` constant in the code (default 2000) based on your sensor readings shown in Serial Monitor.
+**LED:** GPIO 4
+**Photoresistor:** GPIO 34 (ADC)
+**Wiring:** `3.3V → 10kΩ → GPIO34 → Photoresistor → GND`
