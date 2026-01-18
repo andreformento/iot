@@ -1,92 +1,145 @@
-# IoT Agent
+# IoT System
 
-Edge device agent for ESP32 that monitors environmental sensors and provides REST API control. Collects data from the environment and communicates with cloud services.
+ESP32 edge devices with Next.js frontend and NestJS API.
 
-## Setup
-
-1. Copy `iot-agent/secrets.h.example` to `iot-agent/secrets.h`
-2. Configure your WiFi credentials in `secrets.h`
-3. Upload the code to the ESP32
-4. Note the IP displayed in the Serial Monitor
-
-## Web Interface
-
-Access via browser:
+## Architecture
 
 ```
-http://192.168.1.100/
+iot-web (Frontend)  →  iot-api (Backend)  →  iot-agent (Device)
+Port 3000               Port 3001              Port 80
+Next.js                 NestJS                 ESP32
 ```
 
-You will see a visual interface to control the LED.
+## Quick Start
+
+### ESP32 Setup
+
+```bash
+cd iot-agent
+cp secrets.h.example secrets.h
+# Edit secrets.h with WiFi credentials
+# Upload via Arduino IDE
+```
+
+### Environment Configuration
+
+Both TypeScript projects follow the same pattern:
+
+**iot-api/.env.local** (versioned)
+```env
+PORT=3001
+```
+
+**iot-web/.env.local** (versioned)
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001
+PORT=3000
+```
+
+**Strategy:**
+- `.env.local` files are versioned in git
+- Makefile automatically copies `.env.local` to `.env` if `.env` doesn't exist
+- `.env` files are gitignored (local runtime only)
+- Both projects use `dotenv` package to load `.env` files
+
+**Implementation:**
+- `iot-api`: `import 'dotenv/config'` in `main.ts`
+- `iot-web`: Next.js loads `.env` automatically
+
+### Start Application
+
+**Terminal 1:**
+```bash
+make iot-api
+```
+Starts API on `http://localhost:3001`
+
+**Terminal 2:**
+```bash
+make iot-web
+```
+Starts frontend on `http://localhost:3000`
+
+Visit: `http://localhost:3000`
+
+## Commands
+
+Both projects follow the same patterns:
+
+**Install dependencies:**
+```bash
+make install
+```
+Runs `npm install` in both `iot-api/` and `iot-web/`
+
+**Start services (separate terminals):**
+```bash
+make iot-api    # Terminal 1: Starts NestJS on port 3001
+make iot-web    # Terminal 2: Starts Next.js on port 3000
+```
+
+**Run tests:**
+```bash
+make test       # Runs iot-api unit + e2e tests
+```
+
+**Kill running services:**
+```bash
+make kill       # Kills processes on ports 3000/3001
+```
+
+**Clean build artifacts:**
+```bash
+make clean      # Removes node_modules, dist, .next, out
+```
 
 ## API Endpoints
 
-Set your ESP32 IP:
+### GET /health
+Health check.
 
 ```bash
-export ESP32_IP=192.168.1.100
+curl "http://localhost:3001/health"
 ```
 
-### GET /state
-Returns the current LED state.
+### GET /devices/:ip/state
+Get LED state.
 
 ```bash
-curl --max-time 2 "http://$ESP32_IP/state"
+curl "http://localhost:3001/devices/192.168.0.15/state"
 ```
 
-Response:
-```json
-{"on":false,"pin":4}
-```
+Response: `{"on":false,"pin":4}`
 
-### POST /toggle
-Toggles the LED state (on/off).
+### POST /devices/:ip/toggle
+Toggle LED.
 
 ```bash
-curl --max-time 2 -X POST "http://$ESP32_IP/toggle"
+curl -X POST "http://localhost:3001/devices/192.168.0.15/toggle"
 ```
 
-Response:
-```json
-{"on":true,"action":"toggled"}
-```
-
-### POST /on
-Turns the LED on.
+### POST /devices/:ip/on
+Turn LED on.
 
 ```bash
-curl --max-time 2 -X POST "http://$ESP32_IP/on"
+curl -X POST "http://localhost:3001/devices/192.168.0.15/on"
 ```
 
-Response:
-```json
-{"on":true,"action":"turned_on"}
-```
-
-### POST /off
-Turns the LED off.
+### POST /devices/:ip/off
+Turn LED off.
 
 ```bash
-curl --max-time 2 -X POST "http://$ESP32_IP/off"
-```
-
-Response:
-```json
-{"on":false,"action":"turned_off"}
+curl -X POST "http://localhost:3001/devices/192.168.0.15/off"
 ```
 
 ## Hardware
 
-- **LED Pin:** GPIO 4
-- **Photoresistor Pin:** GPIO 34 (ADC)
-- **Port:** 80
+**LED:** GPIO 4
+**Photoresistor:** GPIO 34 (ADC)
+**Wiring:** `3.3V → 10kΩ → GPIO34 → Photoresistor → GND`
 
-### Photoresistor Wiring
+## Tech Stack
 
-Connect your photoresistor in a voltage divider configuration:
-
-```
-3.3V ----[ 10kΩ Resistor ]---- GPIO 34 ----[ Photoresistor ]---- GND
-```
-
-**Note:** GPIO 34 is used because it's an ADC-capable pin on ESP32. Adjust `LIGHT_THRESHOLD` constant in the code (default 2000) based on your sensor readings shown in Serial Monitor.
+**Frontend:** Next.js 15, React 18, TypeScript, Tailwind CSS
+**Backend:** NestJS, TypeScript, Axios
+**Device:** ESP32, Arduino, C++

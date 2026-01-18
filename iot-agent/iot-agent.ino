@@ -3,10 +3,10 @@
 /*
   IoT Agent - ESP32 Edge Device
 
-  Environmental monitoring and actuator control agent.
+  Pure REST API for environmental monitoring and actuator control.
   - LED control (GPIO 4)
   - Light sensor monitoring (GPIO 34)
-  - REST API for remote control
+  - REST API endpoints
 
   Wi-Fi credentials are stored in secrets.h (not versioned)
 */
@@ -23,39 +23,6 @@ static bool ledState = false;
 static bool lastLightState = false;  // Track light presence
 
 WebServer server(80);
-
-static String htmlPage() {
-  String stateText = ledState ? "ON" : "OFF";
-  String buttonText = ledState ? "Turn Off" : "Turn On";
-
-  return R"=====(<!doctype html><html lang='en'><head>
-<meta charset='utf-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/>
-<title>IoT Agent</title>
-<style>
-body{font-family:Arial,sans-serif;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#0b1220;color:#e6eefc}
-.card{background:#121a2b;border:1px solid #22304d;border-radius:16px;padding:22px;max-width:420px;width:92%;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-h1{font-size:20px;margin:0 0 10px}
-.state{font-size:16px;margin:10px 0 18px}
-.btn{padding:12px 16px;border-radius:12px;background:#2b6cff;color:#fff;border:0;font-weight:700;cursor:pointer}
-.btn:active{transform:scale(.99)}
-.hint{opacity:.8;font-size:12px;margin-top:14px}
-</style></head><body><div class='card'>
-<h1>LED Control (GPIO 4)</h1>
-<div id='state' class='state'>Current State: <b>)=====" + stateText + R"=====(</b></div>
-<button id='btn' class='btn'>)=====" + buttonText + R"=====(</button>
-<div class='hint'>Toggle uses POST (prevents accidental triggering by prefetch).</div>
-<script>
-async function refresh(){const r=await fetch('/state');const j=await r.json();
-document.querySelector('#state').innerHTML='Current State: <b>'+(j.on?'ON':'OFF')+'</b>';
-document.querySelector('#btn').textContent=j.on?'Turn Off':'Turn On';}
-document.querySelector('#btn').addEventListener('click',async()=>{await fetch('/toggle',{method:'POST'});await refresh();});
-refresh();
-</script></div></body></html>)=====";
-}
-
-static void handleRoot() {
-  server.send(200, "text/html; charset=utf-8", htmlPage());
-}
 
 static void handleState() {
   String json = String("{\"on\":") + (ledState ? "true" : "false") + ",\"pin\":" + LED_PIN + "}";
@@ -103,13 +70,12 @@ void setup() {
   Serial.print("ESP32 IP: ");
   Serial.println(WiFi.localIP());
 
-  server.on("/", HTTP_GET, handleRoot);
   server.on("/state", HTTP_GET, handleState);
   server.on("/toggle", HTTP_POST, handleToggle);
   server.on("/on", HTTP_POST, handleOn);
   server.on("/off", HTTP_POST, handleOff);
   server.begin();
-  Serial.println("IoT Agent started - Web Interface + REST API on port 80.");
+  Serial.println("IoT Agent started - REST API on port 80.");
 }
 
 void loop() {
