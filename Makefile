@@ -1,31 +1,21 @@
-.PHONY: help install start dev build test test-e2e test-all clean
+.PHONY: install iot-api iot-web test clean kill
 
-help: ## Show this help message
-	@echo 'Usage: make [target]'
-	@echo ''
-	@echo 'Available targets:'
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
-
-install: ## Install dependencies
+install:
 	cd iot-api && npm install
+	cd iot-web && npm install
 
-start: ## Start API server in production mode
-	cd iot-api && npm run start
+iot-api:
+	cd iot-api && (test -f .env || cp .env.local .env) && npm run start:dev
 
-dev: ## Start API server in development mode with hot reload
-	cd iot-api && npm run start:dev
+iot-web:
+	cd iot-web && (test -f .env || cp .env.local .env) && npm run dev
 
-build: ## Build the API server
-	cd iot-api && npm run build
+test:
+	@cd iot-api && npm test && npm run test:e2e
 
-test: ## Run unit tests
-	cd iot-api && npm test
+kill:
+	@lsof -ti:3000,3001 | xargs kill -9
 
-test-e2e: ## Run end-to-end tests
-	cd iot-api && npm run test:e2e
-
-test-all: ## Run all tests (unit + e2e)
-	cd iot-api && npm test && npm run test:e2e
-
-clean: ## Clean build artifacts
-	cd iot-api && rm -rf dist node_modules
+clean:
+	cd iot-api && rm -rf dist node_modules .env
+	cd iot-web && rm -rf .next out node_modules .env

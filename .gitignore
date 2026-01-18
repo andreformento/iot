@@ -1,6 +1,1 @@
-# WiFi credentials
 iot-agent/secrets.h
-
-# Node.js / NestJS
-iot-api/node_modules/
-iot-api/dist/

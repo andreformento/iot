@@ -19,17 +19,6 @@ describe('AppController (e2e)', () => {
     await app.close();
   });
 
-  it('/ (GET) - should return HTML page', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect((res) => {
-        expect(res.text).toContain('IoT Control Panel');
-        expect(res.text).toContain('deviceIp');
-        expect(res.headers['content-type']).toContain('text/html');
-      });
-  });
-
   it('/health (GET) - should return health status', () => {
     return request(app.getHttpServer())
       .get('/health')
