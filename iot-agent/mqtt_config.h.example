@@ -1,0 +1,22 @@
+// MQTT Broker Configuration
+// Copy this file to mqtt_config.h and fill in your values
+
+#ifndef MQTT_CONFIG_H
+#define MQTT_CONFIG_H
+
+// Broker settings
+const char* MQTT_SERVER = "192.168.1.100";  // Your computer's IP for local, or cloud broker URL
+const int MQTT_PORT = 1883;                 // 1883 (plain) or 8883 (TLS)
+#define USE_TLS false                       // true for cloud/TLS, false for local
+
+// Device authentication (unique per device)
+const char* MQTT_CLIENT_ID = "esp32-device-001";
+const char* MQTT_USERNAME = "esp32-device-001";
+const char* MQTT_PASSWORD = "device-secret-001";
+
+// Topics
+const char* TOPIC_SENSORS_LIGHT = "devices/esp32-device-001/sensors/light";
+const char* TOPIC_COMMANDS = "devices/esp32-device-001/commands";
+const char* TOPIC_STATUS = "devices/esp32-device-001/status";
+
+#endif
