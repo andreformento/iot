@@ -26,31 +26,6 @@ pio run -t upload --upload-port /dev/ttyACM0
 pio device monitor --port /dev/ttyACM0 --baud 115200
 ```
 
-### Environment Configuration
-
-Both TypeScript projects follow the same pattern:
-
-**iot-api/.env.local** (versioned)
-```env
-PORT=3001
-```
-
-**iot-web/.env.local** (versioned)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
-PORT=3000
-```
-
-**Strategy:**
-- `.env.local` files are versioned in git
-- Makefile automatically copies `.env.local` to `.env` if `.env` doesn't exist
-- `.env` files are gitignored (local runtime only)
-- Both projects use `dotenv` package to load `.env` files
-
-**Implementation:**
-- `iot-api`: `import 'dotenv/config'` in `main.ts`
-- `iot-web`: Next.js loads `.env` automatically
-
 ### Start Application
 
 **Terminal 1:**
@@ -65,7 +40,6 @@ make web-start
 ```
 Starts frontend on `http://localhost:3000`
 
-Visit: `http://localhost:3000`
 
 ## Commands
 
@@ -75,7 +49,6 @@ Both projects follow the same patterns:
 ```bash
 make install
 ```
-Runs `npm install` in both `iot-api/` and `iot-web/`
 
 **Start services (separate terminals):**
 ```bash
@@ -86,16 +59,6 @@ make web-start  # Terminal 2: Starts Next.js on port 3000
 **Run tests:**
 ```bash
 make test       # Runs iot-api unit + e2e tests
-```
-
-**Kill running services:**
-```bash
-make kill       # Kills processes on ports 3000/3001
-```
-
-**Clean build artifacts:**
-```bash
-make clean      # Removes node_modules, dist, .next, out
 ```
 
 ## API Endpoints
@@ -163,20 +126,6 @@ curl -X POST "http://localhost:3001/devices/192.168.0.15/off"
 
 **WSL/Ubuntu CLI workflow:**
 ```bash
-cd iot-agent
-
-# Ensure PlatformIO is installed
-pio --version
-
-# List serial ports (you should see /dev/ttyACM0 or /dev/ttyUSB0)
-pio device list
-
-# Build
-pio run
-
-# Upload (example port)
-pio run -t upload --upload-port /dev/ttyACM0
-
 # If upload fails with "Permission denied", then:
 sudo usermod -aG dialout $USER
 # Restart WSL: `wsl --shutdown` (Windows), then try upload again
