@@ -16,9 +16,14 @@ Next.js                 NestJS                 ESP32
 
 ```bash
 cd iot-agent
-cp secrets.h.example secrets.h
-# Edit secrets.h with WiFi credentials
-# Upload via Arduino IDE
+cp include/secrets.h.example include/secrets.h
+# Edit include/secrets.h with WiFi credentials
+
+# Build + upload via PlatformIO (WSL/Ubuntu)
+pio run -t upload --upload-port /dev/ttyACM0
+
+# Optional: serial monitor
+pio device monitor --port /dev/ttyACM0 --baud 115200
 ```
 
 ### Environment Configuration
@@ -50,13 +55,13 @@ PORT=3000
 
 **Terminal 1:**
 ```bash
-make iot-api
+make api-start
 ```
 Starts API on `http://localhost:3001`
 
 **Terminal 2:**
 ```bash
-make iot-web
+make web-start
 ```
 Starts frontend on `http://localhost:3000`
 
@@ -74,8 +79,8 @@ Runs `npm install` in both `iot-api/` and `iot-web/`
 
 **Start services (separate terminals):**
 ```bash
-make iot-api    # Terminal 1: Starts NestJS on port 3001
-make iot-web    # Terminal 2: Starts Next.js on port 3000
+make api-start  # Terminal 1: Starts NestJS on port 3001
+make web-start  # Terminal 2: Starts Next.js on port 3000
 ```
 
 **Run tests:**
@@ -143,3 +148,42 @@ curl -X POST "http://localhost:3001/devices/192.168.0.15/off"
 **Frontend:** Next.js 15, React 18, TypeScript, Tailwind CSS
 **Backend:** NestJS, TypeScript, Axios
 **Device:** ESP32, Arduino, C++
+
+## PlatformIO
+
+- [PlatformIO WSL 2 Setup Guide](https://jujaroen.com/posts/post-6/)
+  - windows:
+    - `wsl --update`
+    - `winget install --interactive --exact dorssel.usbipd-win`
+    - `usbipd list`
+    - `usbipd attach --wsl --busid <BUSID>`
+  - linux:
+    - `sudo apt-get install -y usbutils`
+    - `lsusb`
+
+**WSL/Ubuntu CLI workflow:**
+```bash
+cd iot-agent
+
+# Ensure PlatformIO is installed
+pio --version
+
+# List serial ports (you should see /dev/ttyACM0 or /dev/ttyUSB0)
+pio device list
+
+# Build
+pio run
+
+# Upload (example port)
+pio run -t upload --upload-port /dev/ttyACM0
+
+# If upload fails with "Permission denied", then:
+sudo usermod -aG dialout $USER
+# Restart WSL: `wsl --shutdown` (Windows), then try upload again
+```
+
+**Makefile shortcuts:**
+```bash
+make agent-start  # build + upload (checks /dev/ttyACM0 exists)
+make agent-log    # serial monitor
+```

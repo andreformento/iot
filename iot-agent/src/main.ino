@@ -1,5 +1,3 @@
-
-
 /*
   IoT Agent - ESP32 Edge Device
 
@@ -13,7 +11,13 @@
 
 #include <WiFi.h>
 #include <WebServer.h>
+
+// Local credentials file (not versioned). See `include/secrets.h.example`.
+#if __has_include("secrets.h")
 #include "secrets.h"
+#else
+#error "Missing secrets.h (copy include/secrets.h.example -> include/secrets.h)"
+#endif
 
 static const int LED_PIN = 4;
 static const int PHOTO_PIN = 34;  // ADC pin for photoresistor
