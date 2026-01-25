@@ -1,5 +1,2 @@
 .vscode/
 .pio/
-
-# Keep WiFi credentials untracked (PlatformIO include path)
-iot-agent/include/secrets.h

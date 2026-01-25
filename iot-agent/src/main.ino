@@ -12,12 +12,17 @@
 #include <WiFi.h>
 #include <WebServer.h>
 
-// Local credentials file (not versioned). See `include/secrets.h.example`.
-#if __has_include("secrets.h")
-#include "secrets.h"
-#else
-#error "Missing secrets.h (copy include/secrets.h.example -> include/secrets.h)"
+// Wi-Fi credentials are injected via PlatformIO build flags.
+// See `platformio.ini` (WIFI_SSID / WIFI_PASS).
+#ifndef WIFI_SSID
+#error "WIFI_SSID not defined (set env var WIFI_SSID)"
 #endif
+#ifndef WIFI_PASS
+#error "WIFI_PASS not defined (set env var WIFI_PASS)"
+#endif
+
+static_assert(sizeof(WIFI_SSID) > 1, "WIFI_SSID is empty (set env var WIFI_SSID)");
+static_assert(sizeof(WIFI_PASS) > 1, "WIFI_PASS is empty (set env var WIFI_PASS)");
 
 static const int LED_PIN = 4;
 static const int PHOTO_PIN = 34;  // ADC pin for photoresistor

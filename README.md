@@ -15,15 +15,8 @@ Next.js                 NestJS                 ESP32
 ### ESP32 Setup
 
 ```bash
-cd iot-agent
-cp include/secrets.h.example include/secrets.h
-# Edit include/secrets.h with WiFi credentials
-
-# Build + upload via PlatformIO (WSL/Ubuntu)
-pio run -t upload --upload-port /dev/ttyACM0
-
-# Optional: serial monitor
-pio device monitor --port /dev/ttyACM0 --baud 115200
+WIFI_SSID="My WiFi" WIFI_PASS="MyPass" make agent-start
+make agent-log    # serial monitor
 ```
 
 ### Start Application
@@ -39,7 +32,6 @@ Starts API on `http://localhost:3001`
 make web-start
 ```
 Starts frontend on `http://localhost:3000`
-
 
 ## Commands
 
@@ -129,10 +121,4 @@ curl -X POST "http://localhost:3001/devices/192.168.0.15/off"
 # If upload fails with "Permission denied", then:
 sudo usermod -aG dialout $USER
 # Restart WSL: `wsl --shutdown` (Windows), then try upload again
-```
-
-**Makefile shortcuts:**
-```bash
-make agent-start  # build + upload (checks /dev/ttyACM0 exists)
-make agent-log    # serial monitor
 ```
