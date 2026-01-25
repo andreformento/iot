@@ -6,7 +6,7 @@
   - Light sensor monitoring (GPIO 34)
   - REST API endpoints
 
-  Wi-Fi credentials are stored in secrets.h (not versioned)
+  Wi-Fi credentials are provided via env vars (WIFI_SSID / WIFI_PASS)
 */
 
 #include <WiFi.h>
@@ -26,7 +26,7 @@ static_assert(sizeof(WIFI_PASS) > 1, "WIFI_PASS is empty (set env var WIFI_PASS)
 
 static const int LED_PIN = 4;
 static const int PHOTO_PIN = 34;  // ADC pin for photoresistor
-static const int LIGHT_THRESHOLD = 2000;  // Adjust based on your sensor
+static const int LIGHT_THRESHOLD = 1000;  // Tuned via Serial logs
 
 static bool ledState = false;
 static bool lastLightState = false;  // Track light presence
@@ -66,6 +66,9 @@ void setup() {
   Serial.begin(115200);
   delay(200);
 
+  // ADC setup: wider input range (helps with 3.3V divider readings)
+  analogSetPinAttenuation(PHOTO_PIN, ADC_11db);
+
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
 
@@ -96,7 +99,8 @@ void loop() {
   // Check for light state changes every 100ms
   if (now - lastCheck > 100) {
     int lightValue = analogRead(PHOTO_PIN);
-    bool hasLight = lightValue < LIGHT_THRESHOLD;  // Inverted logic for voltage divider
+    // Inverted logic for voltage divider (adjust wiring/threshold if needed)
+    bool hasLight = lightValue < LIGHT_THRESHOLD;
 
     if (hasLight != lastLightState) {
       lastLightState = hasLight;
