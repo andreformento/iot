@@ -1,8 +1,5 @@
-iot-agent/.pio/
-iot-agent/.vscode/
+.vscode/
+.pio/
 
 # Keep WiFi credentials untracked (PlatformIO include path)
 iot-agent/include/secrets.h
-
-# Back-compat if a local secrets.h exists at repo root
-iot-agent/secrets.h
