@@ -1,1 +1,42 @@
+# Node modules
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+
+# Environment files
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# ESP32 secrets
 iot-agent/secrets.h
+iot-agent/mqtt_config.h
+
+# Mosquitto data
+mosquitto/config/passwd
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
