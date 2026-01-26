@@ -1,14 +1,27 @@
-.PHONY: install iot-api iot-web test clean kill
+.PHONY: install api-start web-start agent-start agent-log test clean kill
 
 install:
 	cd iot-api && npm install
 	cd iot-web && npm install
 
-iot-api:
+api-start:
 	cd iot-api && (test -f .env || cp .env.local .env) && npm run start:dev
 
-iot-web:
+web-start:
 	cd iot-web && (test -f .env || cp .env.local .env) && npm run dev
+
+PORT ?= /dev/ttyACM0
+export WIFI_SSID WIFI_PASS
+
+agent-start:
+	@test -c "$(PORT)" || (echo "ERROR: $(PORT) not found. Run: pio device list" && exit 1)
+	@test -n "$(WIFI_SSID)" || (echo "ERROR: WIFI_SSID env var is required" && exit 1)
+	@test -n "$(WIFI_PASS)" || (echo "ERROR: WIFI_PASS env var is required" && exit 1)
+	cd iot-agent && WIFI_SSID="$(WIFI_SSID)" WIFI_PASS="$(WIFI_PASS)" pio run
+	cd iot-agent && WIFI_SSID="$(WIFI_SSID)" WIFI_PASS="$(WIFI_PASS)" pio run -t upload --upload-port $(PORT)
+
+agent-log:
+	cd iot-agent && pio device monitor --port $(PORT) --baud 115200
 
 test:
 	@cd iot-api && npm test && npm run test:e2e
