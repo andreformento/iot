@@ -16,7 +16,7 @@ Next.js                 NestJS                 ESP32
 
 ```bash
 WIFI_SSID="My WiFi" WIFI_PASS="MyPass" make agent-start
-make agent-log    # serial monitor
+make agent-log
 ```
 
 ### Start Application
