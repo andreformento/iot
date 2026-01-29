@@ -15,52 +15,23 @@ Next.js                 NestJS                 ESP32
 ### ESP32 Setup
 
 ```bash
-cd iot-agent
-cp secrets.h.example secrets.h
-# Edit secrets.h with WiFi credentials
-# Upload via Arduino IDE
+WIFI_SSID="My WiFi" WIFI_PASS="MyPass" make agent-start
+make agent-log
 ```
-
-### Environment Configuration
-
-Both TypeScript projects follow the same pattern:
-
-**iot-api/.env.local** (versioned)
-```env
-PORT=3001
-```
-
-**iot-web/.env.local** (versioned)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
-PORT=3000
-```
-
-**Strategy:**
-- `.env.local` files are versioned in git
-- Makefile automatically copies `.env.local` to `.env` if `.env` doesn't exist
-- `.env` files are gitignored (local runtime only)
-- Both projects use `dotenv` package to load `.env` files
-
-**Implementation:**
-- `iot-api`: `import 'dotenv/config'` in `main.ts`
-- `iot-web`: Next.js loads `.env` automatically
 
 ### Start Application
 
 **Terminal 1:**
 ```bash
-make iot-api
+make api-start
 ```
 Starts API on `http://localhost:3001`
 
 **Terminal 2:**
 ```bash
-make iot-web
+make web-start
 ```
 Starts frontend on `http://localhost:3000`
-
-Visit: `http://localhost:3000`
 
 ## Commands
 
@@ -70,27 +41,16 @@ Both projects follow the same patterns:
 ```bash
 make install
 ```
-Runs `npm install` in both `iot-api/` and `iot-web/`
 
 **Start services (separate terminals):**
 ```bash
-make iot-api    # Terminal 1: Starts NestJS on port 3001
-make iot-web    # Terminal 2: Starts Next.js on port 3000
+make api-start  # Terminal 1: Starts NestJS on port 3001
+make web-start  # Terminal 2: Starts Next.js on port 3000
 ```
 
 **Run tests:**
 ```bash
 make test       # Runs iot-api unit + e2e tests
-```
-
-**Kill running services:**
-```bash
-make kill       # Kills processes on ports 3000/3001
-```
-
-**Clean build artifacts:**
-```bash
-make clean      # Removes node_modules, dist, .next, out
 ```
 
 ## API Endpoints
@@ -143,3 +103,22 @@ curl -X POST "http://localhost:3001/devices/192.168.0.15/off"
 **Frontend:** Next.js 15, React 18, TypeScript, Tailwind CSS
 **Backend:** NestJS, TypeScript, Axios
 **Device:** ESP32, Arduino, C++
+
+## PlatformIO
+
+- [PlatformIO WSL 2 Setup Guide](https://jujaroen.com/posts/post-6/)
+  - windows:
+    - `wsl --update`
+    - `winget install --interactive --exact dorssel.usbipd-win`
+    - `usbipd list`
+    - `usbipd attach --wsl --busid <BUSID>`
+  - linux:
+    - `sudo apt-get install -y usbutils`
+    - `lsusb`
+
+**WSL/Ubuntu CLI workflow:**
+```bash
+# If upload fails with "Permission denied", then:
+sudo usermod -aG dialout $USER
+# Restart WSL: `wsl --shutdown` (Windows), then try upload again
+```

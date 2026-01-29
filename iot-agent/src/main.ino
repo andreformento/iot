@@ -1,26 +1,24 @@
-
-
-/*
-  IoT Agent - ESP32 Edge Device
-
-  Pure REST API for environmental monitoring and actuator control.
-  - LED control (GPIO 4)
-  - Light sensor monitoring (GPIO 34)
-  - REST API endpoints
-
-  Wi-Fi credentials are stored in secrets.h (not versioned)
-*/
+/* IoT Agent - ESP32 */
 
 #include <WiFi.h>
 #include <WebServer.h>
-#include "secrets.h"
+
+#ifndef WIFI_SSID
+#error "WIFI_SSID not defined (set env var WIFI_SSID)"
+#endif
+#ifndef WIFI_PASS
+#error "WIFI_PASS not defined (set env var WIFI_PASS)"
+#endif
+
+static_assert(sizeof(WIFI_SSID) > 1, "WIFI_SSID is empty (set env var WIFI_SSID)");
+static_assert(sizeof(WIFI_PASS) > 1, "WIFI_PASS is empty (set env var WIFI_PASS)");
 
 static const int LED_PIN = 4;
-static const int PHOTO_PIN = 34;  // ADC pin for photoresistor
-static const int LIGHT_THRESHOLD = 2000;  // Adjust based on your sensor
+static const int PHOTO_PIN = 34;
+static const int LIGHT_THRESHOLD = 1000;
 
 static bool ledState = false;
-static bool lastLightState = false;  // Track light presence
+static bool lastLightState = false;
 
 WebServer server(80);
 
@@ -57,6 +55,8 @@ void setup() {
   Serial.begin(115200);
   delay(200);
 
+  analogSetPinAttenuation(PHOTO_PIN, ADC_11db);
+
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
 
@@ -84,10 +84,9 @@ void loop() {
   static unsigned long lastCheck = 0;
   unsigned long now = millis();
 
-  // Check for light state changes every 100ms
   if (now - lastCheck > 100) {
     int lightValue = analogRead(PHOTO_PIN);
-    bool hasLight = lightValue < LIGHT_THRESHOLD;  // Inverted logic for voltage divider
+    bool hasLight = lightValue < LIGHT_THRESHOLD;
 
     if (hasLight != lastLightState) {
       lastLightState = hasLight;
