@@ -1,7 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api, DeviceState } from '@/lib/api';
+import {
+  createRealtimeSocket,
+  RealtimeState as RealtimeStateType,
+} from '@/lib/realtime';
 
 export default function Home() {
   const [deviceIp, setDeviceIp] = useState('192.168.0.15');
@@ -9,9 +13,11 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [mqttState, setMqttState] = useState<DeviceState | null>(null);
-  const [mqttLoading, setMqttLoading] = useState(false);
-  const [mqttError, setMqttError] = useState<string | null>(null);
+  const [realtimeState, setRealtimeState] = useState<RealtimeStateType | null>(
+    null,
+  );
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
+  const socketRef = useRef<ReturnType<typeof createRealtimeSocket> | null>(null);
 
   const validateIp = (ip: string): boolean => {
     const pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
@@ -55,33 +61,28 @@ export default function Home() {
     }
   };
 
-  const fetchMqttState = async () => {
-    setMqttError(null);
-    setMqttLoading(true);
-    try {
-      const data = await api.getStateMqtt();
-      setMqttState(data);
-    } catch (err) {
-      setMqttError('No MQTT state yet');
-      setMqttState(null);
-    } finally {
-      setMqttLoading(false);
-    }
-  };
+  useEffect(() => {
+    const socket = createRealtimeSocket();
+    socketRef.current = socket;
 
-  const handleMqttCommand = async (command: 'on' | 'off' | 'toggle') => {
-    setMqttError(null);
-    setMqttLoading(true);
-    try {
-      if (command === 'on') await api.turnOnMqtt();
-      else if (command === 'off') await api.turnOffMqtt();
-      else await api.toggleMqtt();
-      await fetchMqttState();
-    } catch (err) {
-      setMqttError('Failed to send command');
-    } finally {
-      setMqttLoading(false);
-    }
+    socket.on('connect', () => {
+      setRealtimeConnected(true);
+    });
+    socket.on('disconnect', () => {
+      setRealtimeConnected(false);
+    });
+    socket.on('state', (payload: RealtimeStateType) => {
+      setRealtimeState(payload);
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, []);
+
+  const handleRealtimeCommand = (command: 'on' | 'off' | 'toggle') => {
+    socketRef.current?.emit('command', command);
   };
 
   return (
@@ -143,46 +144,56 @@ export default function Home() {
         <div className="border-t md:border-t-0 md:border-l border-slate-600 pt-8 md:pt-0 md:pl-8" />
 
         <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-8 flex-1">
-          <h2 className="text-xl font-bold text-white mb-4">MQTT</h2>
-          <div className="mb-4">
-            <button
-              onClick={fetchMqttState}
-              disabled={mqttLoading}
-              className="text-sm text-slate-400 hover:text-white"
-            >
-              Refresh state
-            </button>
-            {mqttError && <p className="mt-2 text-sm text-red-400">{mqttError}</p>}
+          <h2 className="text-xl font-bold text-white mb-4">Realtime</h2>
+          <div className="mb-4 flex items-center gap-2">
+            <span
+              className={`inline-block w-2 h-2 rounded-full ${realtimeConnected ? 'bg-green-500' : 'bg-slate-500'}`}
+            />
+            <span className="text-sm text-slate-400">
+              {realtimeConnected ? 'Connected' : 'Disconnected'}
+            </span>
           </div>
-          <div className="mb-4 p-4 bg-slate-900 rounded-lg">
-            <p className="text-sm text-slate-400 mb-1">Status</p>
-            {mqttState ? (
+          <div className="mb-4 p-4 bg-slate-900 rounded-lg space-y-2">
+            <p className="text-sm text-slate-400 mb-1">LED</p>
+            {realtimeState?.led ? (
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-white">{mqttState.on ? 'ON' : 'OFF'}</span>
-                <span className="text-sm text-slate-400">Pin: {mqttState.pin}</span>
+                <span className="text-2xl font-bold text-white">
+                  {realtimeState.led.on ? 'ON' : 'OFF'}
+                </span>
+                <span className="text-sm text-slate-400">
+                  Pin: {realtimeState.led.pin}
+                </span>
               </div>
             ) : (
-              <span className="text-lg text-slate-500">Unknown</span>
+              <span className="text-lg text-slate-500">—</span>
             )}
+            <p className="text-sm text-slate-400 mt-3 mb-1">Light sensor</p>
+            <span className="text-lg text-white">
+              {realtimeState?.light === 'on'
+                ? 'Detected'
+                : realtimeState?.light === 'off'
+                  ? 'Off'
+                  : '—'}
+            </span>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <button
-              onClick={() => handleMqttCommand('on')}
-              disabled={mqttLoading}
+              onClick={() => handleRealtimeCommand('on')}
+              disabled={!realtimeConnected}
               className="px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
             >
               On
             </button>
             <button
-              onClick={() => handleMqttCommand('off')}
-              disabled={mqttLoading}
+              onClick={() => handleRealtimeCommand('off')}
+              disabled={!realtimeConnected}
               className="px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
             >
               Off
             </button>
             <button
-              onClick={() => handleMqttCommand('toggle')}
-              disabled={mqttLoading}
+              onClick={() => handleRealtimeCommand('toggle')}
+              disabled={!realtimeConnected}
               className="px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
             >
               Toggle

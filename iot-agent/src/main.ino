@@ -33,6 +33,7 @@ PubSubClient mqttClient(wifiClient);
 
 static const char* MQTT_STATE_TOPIC = "device/led/state";
 static const char* MQTT_COMMAND_TOPIC = "device/led/command";
+static const char* MQTT_LIGHT_TOPIC = "device/light/state";
 
 static void publishState() {
   if (!mqttClient.connected()) return;
@@ -158,6 +159,10 @@ void loop() {
         Serial.println("Light detected!");
       } else {
         Serial.println("Light turned off");
+      }
+
+      if (mqttClient.connected()) {
+        mqttClient.publish(MQTT_LIGHT_TOPIC, hasLight ? "on" : "off");
       }
     }
 
