@@ -2,6 +2,8 @@
 
 #include <WiFi.h>
 #include <WebServer.h>
+#include <PubSubClient.h>
+#include <WiFiClient.h>
 
 #ifndef WIFI_SSID
 #error "WIFI_SSID not defined (set env var WIFI_SSID)"
@@ -13,6 +15,11 @@
 static_assert(sizeof(WIFI_SSID) > 1, "WIFI_SSID is empty (set env var WIFI_SSID)");
 static_assert(sizeof(WIFI_PASS) > 1, "WIFI_PASS is empty (set env var WIFI_PASS)");
 
+#ifndef MQTT_BROKER
+#error "MQTT_BROKER not defined (set env var MQTT_BROKER)"
+#endif
+static_assert(sizeof(MQTT_BROKER) > 1, "MQTT_BROKER is empty (set env var MQTT_BROKER)");
+
 static const int LED_PIN = 4;
 static const int PHOTO_PIN = 34;
 static const int LIGHT_THRESHOLD = 1000;
@@ -21,6 +28,33 @@ static bool ledState = false;
 static bool lastLightState = false;
 
 WebServer server(80);
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient);
+
+static const char* MQTT_STATE_TOPIC = "device/led/state";
+static const char* MQTT_COMMAND_TOPIC = "device/led/command";
+
+static void publishState() {
+  if (!mqttClient.connected()) return;
+  char buf[64];
+  snprintf(buf, sizeof(buf), "{\"on\":%s,\"pin\":%d}", ledState ? "true" : "false", LED_PIN);
+  mqttClient.publish(MQTT_STATE_TOPIC, buf);
+}
+
+static void mqttCallback(char* topic, byte* payload, unsigned int length) {
+  if (strcmp(topic, MQTT_COMMAND_TOPIC) != 0) return;
+  if (length == 6 && memcmp(payload, "toggle", 6) == 0) {
+    ledState = !ledState;
+    digitalWrite(LED_PIN, ledState ? HIGH : LOW);
+  } else if (length == 2 && memcmp(payload, "on", 2) == 0) {
+    ledState = true;
+    digitalWrite(LED_PIN, HIGH);
+  } else if (length == 3 && memcmp(payload, "off", 3) == 0) {
+    ledState = false;
+    digitalWrite(LED_PIN, LOW);
+  }
+  publishState();
+}
 
 static void handleState() {
   String json = String("{\"on\":") + (ledState ? "true" : "false") + ",\"pin\":" + LED_PIN + "}";
@@ -30,6 +64,7 @@ static void handleState() {
 static void handleToggle() {
   ledState = !ledState;
   digitalWrite(LED_PIN, ledState ? HIGH : LOW);
+  publishState();
   String json = String("{\"on\":") + (ledState ? "true" : "false") + ",\"action\":\"toggled\"}";
   server.send(200, "application/json", json);
 }
@@ -37,6 +72,7 @@ static void handleToggle() {
 static void handleOn() {
   ledState = true;
   digitalWrite(LED_PIN, HIGH);
+  publishState();
   String json = "{\"on\":true,\"action\":\"turned_on\"}";
   server.send(200, "application/json", json);
 }
@@ -44,6 +80,7 @@ static void handleOn() {
 static void handleOff() {
   ledState = false;
   digitalWrite(LED_PIN, LOW);
+  publishState();
   String json = "{\"on\":false,\"action\":\"turned_off\"}";
   server.send(200, "application/json", json);
 }
@@ -76,13 +113,39 @@ void setup() {
   server.on("/off", HTTP_POST, handleOff);
   server.begin();
   Serial.println("IoT Agent started - REST API on port 80.");
+
+  Serial.print("MQTT broker: ");
+  Serial.println(MQTT_BROKER);
+  mqttClient.setServer(MQTT_BROKER, 1883);
+  mqttClient.setCallback(mqttCallback);
 }
 
 void loop() {
   server.handleClient();
 
-  static unsigned long lastCheck = 0;
   unsigned long now = millis();
+
+  if (!mqttClient.connected()) {
+    static unsigned long lastReconnect = 0;
+    if (now - lastReconnect > 1000) {
+      lastReconnect = now;
+      if (mqttClient.connect("esp32")) {
+        mqttClient.subscribe(MQTT_COMMAND_TOPIC);
+        publishState();
+        Serial.println("MQTT connected!");
+      } else {
+        Serial.print("MQTT connect failed broker=");
+        Serial.print(MQTT_BROKER);
+        Serial.print(":1883 state=");
+        Serial.print(mqttClient.state());
+        Serial.println(" (retry in 1s)");
+      }
+    }
+  } else {
+    mqttClient.loop();
+  }
+
+  static unsigned long lastCheck = 0;
 
   if (now - lastCheck > 100) {
     int lightValue = analogRead(PHOTO_PIN);
