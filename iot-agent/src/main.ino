@@ -31,9 +31,10 @@ WebServer server(80);
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
-static const char* MQTT_STATE_TOPIC = "device/led/state";
-static const char* MQTT_COMMAND_TOPIC = "device/led/command";
-static const char* MQTT_LIGHT_TOPIC = "device/light/state";
+/* Device-scoped MQTT topics: device/<IP>/... (filled in setup after WiFi) */
+static char MQTT_STATE_TOPIC[48];
+static char MQTT_COMMAND_TOPIC[48];
+static char MQTT_LIGHT_TOPIC[48];
 
 static void publishState() {
   if (!mqttClient.connected()) return;
@@ -114,6 +115,11 @@ void setup() {
   server.on("/off", HTTP_POST, handleOff);
   server.begin();
   Serial.println("IoT Agent started - REST API on port 80.");
+
+  IPAddress ip = WiFi.localIP();
+  snprintf(MQTT_STATE_TOPIC, sizeof(MQTT_STATE_TOPIC), "device/%d.%d.%d.%d/led/state", ip[0], ip[1], ip[2], ip[3]);
+  snprintf(MQTT_COMMAND_TOPIC, sizeof(MQTT_COMMAND_TOPIC), "device/%d.%d.%d.%d/led/command", ip[0], ip[1], ip[2], ip[3]);
+  snprintf(MQTT_LIGHT_TOPIC, sizeof(MQTT_LIGHT_TOPIC), "device/%d.%d.%d.%d/light/state", ip[0], ip[1], ip[2], ip[3]);
 
   Serial.print("MQTT broker: ");
   Serial.println(MQTT_BROKER);

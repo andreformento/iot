@@ -9,6 +9,9 @@ export interface RealtimeState {
   light: 'on' | 'off' | null;
 }
 
+/** State keyed by device IP (from MQTT topics device/<IP>/...) */
+export type DevicesState = Record<string, RealtimeState>;
+
 export function createRealtimeSocket(): Socket {
   return io(API_URL, {
     path: '/realtime',

@@ -5,6 +5,7 @@ import { api, DeviceState } from '@/lib/api';
 import {
   createRealtimeSocket,
   RealtimeState as RealtimeStateType,
+  DevicesState,
 } from '@/lib/realtime';
 
 export default function Home() {
@@ -13,9 +14,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [realtimeState, setRealtimeState] = useState<RealtimeStateType | null>(
-    null,
-  );
+  const [realtimeDeviceId, setRealtimeDeviceId] = useState<string>('');
+  const [devicesState, setDevicesState] = useState<DevicesState>({});
   const [realtimeConnected, setRealtimeConnected] = useState(false);
   const socketRef = useRef<ReturnType<typeof createRealtimeSocket> | null>(null);
 
@@ -71,8 +71,8 @@ export default function Home() {
     socket.on('disconnect', () => {
       setRealtimeConnected(false);
     });
-    socket.on('state', (payload: RealtimeStateType) => {
-      setRealtimeState(payload);
+    socket.on('state', (payload: DevicesState) => {
+      setDevicesState(payload ?? {});
     });
 
     return () => {
@@ -82,8 +82,18 @@ export default function Home() {
   }, []);
 
   const handleRealtimeCommand = (command: 'on' | 'off' | 'toggle') => {
-    socketRef.current?.emit('command', command);
+    if (!realtimeDeviceId) return;
+    socketRef.current?.emit('command', {
+      deviceId: realtimeDeviceId,
+      command,
+    });
   };
+
+  const knownDeviceIds = Object.keys(devicesState).sort();
+  const realtimeState: RealtimeStateType | null = realtimeDeviceId
+    ? devicesState[realtimeDeviceId] ?? null
+    : null;
+  const hasDeviceSelected = !!realtimeDeviceId && knownDeviceIds.includes(realtimeDeviceId);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
@@ -153,6 +163,34 @@ export default function Home() {
               {realtimeConnected ? 'Connected' : 'Disconnected'}
             </span>
           </div>
+          <div className="mb-4">
+            <label htmlFor="realtimeDevice" className="block text-sm font-medium text-slate-300 mb-2">
+              Device
+            </label>
+            <select
+              id="realtimeDevice"
+              value={realtimeDeviceId}
+              onChange={(e) => setRealtimeDeviceId(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1.25rem', paddingRight: '2.5rem' }}
+            >
+              <option value="">
+                {knownDeviceIds.length === 0
+                  ? 'No devices on MQTT yet'
+                  : 'Select device…'}
+              </option>
+              {knownDeviceIds.map((id) => (
+                <option key={id} value={id}>
+                  {id}
+                </option>
+              ))}
+            </select>
+            {knownDeviceIds.length > 0 && (
+              <p className="mt-1 text-xs text-slate-500">
+                {knownDeviceIds.length} device{knownDeviceIds.length !== 1 ? 's' : ''} connected via MQTT
+              </p>
+            )}
+          </div>
           <div className="mb-4 p-4 bg-slate-900 rounded-lg space-y-2">
             <p className="text-sm text-slate-400 mb-1">LED</p>
             {realtimeState?.led ? (
@@ -165,7 +203,9 @@ export default function Home() {
                 </span>
               </div>
             ) : (
-              <span className="text-lg text-slate-500">—</span>
+              <span className="text-lg text-slate-500">
+                {hasDeviceSelected && !realtimeState?.led ? 'No data yet' : '—'}
+              </span>
             )}
             <p className="text-sm text-slate-400 mt-3 mb-1">Light sensor</p>
             <span className="text-lg text-white">
@@ -173,27 +213,29 @@ export default function Home() {
                 ? 'Detected'
                 : realtimeState?.light === 'off'
                   ? 'Off'
-                  : '—'}
+                  : hasDeviceSelected && realtimeState?.light == null
+                    ? 'No data yet'
+                    : '—'}
             </span>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <button
               onClick={() => handleRealtimeCommand('on')}
-              disabled={!realtimeConnected}
+              disabled={!realtimeConnected || !hasDeviceSelected}
               className="px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
             >
               On
             </button>
             <button
               onClick={() => handleRealtimeCommand('off')}
-              disabled={!realtimeConnected}
+              disabled={!realtimeConnected || !hasDeviceSelected}
               className="px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
             >
               Off
             </button>
             <button
               onClick={() => handleRealtimeCommand('toggle')}
-              disabled={!realtimeConnected}
+              disabled={!realtimeConnected || !hasDeviceSelected}
               className="px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
             >
               Toggle

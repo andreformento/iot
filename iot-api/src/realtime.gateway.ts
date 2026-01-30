@@ -6,7 +6,7 @@ import {
   SubscribeMessage,
 } from '@nestjs/websockets';
 import { Server } from 'socket.io';
-import { MqttService } from './mqtt.service';
+import { MqttService, DevicesState } from './mqtt.service';
 
 @WebSocketGateway({
   cors: { origin: '*' },
@@ -19,7 +19,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
   constructor(private readonly mqttService: MqttService) {}
 
   afterInit() {
-    this.mqttService.state$.subscribe((state) => {
+    this.mqttService.state$.subscribe((state: DevicesState) => {
       this.server.emit('state', state);
     });
   }
@@ -31,8 +31,10 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
   @SubscribeMessage('command')
   handleCommand(
     _client: import('socket.io').Socket,
-    payload: 'toggle' | 'on' | 'off',
+    payload: { deviceId: string; command: 'toggle' | 'on' | 'off' },
   ) {
-    this.mqttService.publishCommand(payload);
+    if (payload?.deviceId && payload?.command) {
+      this.mqttService.publishCommand(payload.deviceId, payload.command);
+    }
   }
 }
