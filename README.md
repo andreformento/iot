@@ -48,6 +48,11 @@ make api-start  # Terminal 1: Starts NestJS on port 3001
 make web-start  # Terminal 2: Starts Next.js on port 3000
 ```
 
+**Start MQTT broker:**
+```bash
+make mqtt
+```
+
 **Run tests:**
 ```bash
 make test       # Runs iot-api unit + e2e tests
@@ -92,6 +97,12 @@ Turn LED off.
 curl -X POST "http://localhost:3001/devices/192.168.0.15/off"
 ```
 
+### MQTT (device/led topics)
+- `GET /devices/mqtt/state` — last state from MQTT
+- `POST /devices/mqtt/toggle`, `/devices/mqtt/on`, `/devices/mqtt/off`
+
+Use `make mqtt` to start the broker. For iot-agent MQTT, set `MQTT_BROKER` to your host IP (e.g. `MQTT_BROKER=192.168.100.1` with `make agent-start`).
+
 ## Hardware
 
 **LED:** GPIO 4
@@ -115,6 +126,7 @@ curl -X POST "http://localhost:3001/devices/192.168.0.15/off"
   - linux:
     - `sudo apt-get install -y usbutils`
     - `lsusb`
+- get ip on windows: `ipconfig`
 
 **WSL/Ubuntu CLI workflow:**
 ```bash

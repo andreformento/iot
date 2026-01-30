@@ -50,4 +50,23 @@ export const api = {
     });
     return response.data;
   },
+
+  async getStateMqtt(): Promise<DeviceState> {
+    const response = await axios.get(`${API_URL}/devices/mqtt/state`, {
+      timeout: 2000,
+    });
+    return response.data;
+  },
+
+  async toggleMqtt(): Promise<void> {
+    await axios.post(`${API_URL}/devices/mqtt/toggle`, null, { timeout: 2000 });
+  },
+
+  async turnOnMqtt(): Promise<void> {
+    await axios.post(`${API_URL}/devices/mqtt/on`, null, { timeout: 2000 });
+  },
+
+  async turnOffMqtt(): Promise<void> {
+    await axios.post(`${API_URL}/devices/mqtt/off`, null, { timeout: 2000 });
+  },
 };
