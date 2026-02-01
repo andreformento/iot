@@ -123,7 +123,7 @@ Use `make mqtt` to start the broker. For iot-agent MQTT, set `MQTT_BROKER` to yo
     - `wsl --update`
     - `winget install --interactive --exact dorssel.usbipd-win`
     - `usbipd list`
-    - `usbipd attach --wsl --busid <BUSID>`
+    - `usbipd attach --wsl --auto-attach --busid <BUSID>`
   - linux:
     - `sudo apt-get install -y usbutils`
     - `lsusb`
