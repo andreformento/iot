@@ -67,6 +67,7 @@ export default function Home() {
 
     socket.on('connect', () => {
       setRealtimeConnected(true);
+      socket.emit('getState');
     });
     socket.on('disconnect', () => {
       setRealtimeConnected(false);
@@ -75,7 +76,12 @@ export default function Home() {
       setDevicesState(payload ?? {});
     });
 
+    const interval = setInterval(() => {
+      if (socket.connected) socket.emit('getState');
+    }, 3000);
+
     return () => {
+      clearInterval(interval);
       socket.disconnect();
       socketRef.current = null;
     };
@@ -88,6 +94,12 @@ export default function Home() {
       command,
     });
   };
+
+  useEffect(() => {
+    if (realtimeDeviceId && !(realtimeDeviceId in devicesState)) {
+      setRealtimeDeviceId('');
+    }
+  }, [devicesState, realtimeDeviceId]);
 
   const knownDeviceIds = Object.keys(devicesState).sort();
   const realtimeState: RealtimeStateType | null = realtimeDeviceId

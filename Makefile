@@ -1,4 +1,4 @@
-.PHONY: install api-start web-start setup-env agent-start agent-log mqtt test clean kill
+.PHONY: install api-start web-start setup-env agent-start agent-log agent-kill mqtt test clean kill
 
 install:
 	cd iot-api && npm install

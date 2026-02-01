@@ -28,6 +28,11 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
     client.emit('state', this.mqttService.getState());
   }
 
+  @SubscribeMessage('getState')
+  handleGetState(client: import('socket.io').Socket) {
+    client.emit('state', this.mqttService.getState());
+  }
+
   @SubscribeMessage('command')
   handleCommand(
     _client: import('socket.io').Socket,

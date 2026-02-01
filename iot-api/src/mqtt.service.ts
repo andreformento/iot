@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 
 const LED_STATE_PATTERN = 'device/+/led/state';
 const LIGHT_STATE_PATTERN = 'device/+/light/state';
+const STATUS_PATTERN = 'device/+/status';
 
 export interface RealtimeState {
   led: { on: boolean; pin: number } | null;
@@ -30,10 +31,19 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     this.client.on('connect', () => {
       this.client!.subscribe(LED_STATE_PATTERN);
       this.client!.subscribe(LIGHT_STATE_PATTERN);
+      this.client!.subscribe(STATUS_PATTERN);
     });
     this.client.on('message', (topic, payload) => {
       const deviceId = parseDeviceIdFromTopic(topic);
       if (!deviceId) return;
+
+      if (topic.endsWith('/status')) {
+        if (payload.toString().toLowerCase() === 'offline') {
+          this.devices.delete(deviceId);
+          this.emitState();
+        }
+        return;
+      }
 
       const current = this.devices.get(deviceId) ?? {
         led: null,

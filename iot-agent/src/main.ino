@@ -35,6 +35,7 @@ PubSubClient mqttClient(wifiClient);
 static char MQTT_STATE_TOPIC[48];
 static char MQTT_COMMAND_TOPIC[48];
 static char MQTT_LIGHT_TOPIC[48];
+static char MQTT_STATUS_TOPIC[48];
 
 static void publishState() {
   if (!mqttClient.connected()) return;
@@ -116,10 +117,13 @@ void setup() {
   server.begin();
   Serial.println("IoT Agent started - REST API on port 80.");
 
-  IPAddress ip = WiFi.localIP();
-  snprintf(MQTT_STATE_TOPIC, sizeof(MQTT_STATE_TOPIC), "device/%d.%d.%d.%d/led/state", ip[0], ip[1], ip[2], ip[3]);
-  snprintf(MQTT_COMMAND_TOPIC, sizeof(MQTT_COMMAND_TOPIC), "device/%d.%d.%d.%d/led/command", ip[0], ip[1], ip[2], ip[3]);
-  snprintf(MQTT_LIGHT_TOPIC, sizeof(MQTT_LIGHT_TOPIC), "device/%d.%d.%d.%d/light/state", ip[0], ip[1], ip[2], ip[3]);
+  IPAddress addr = WiFi.localIP();
+  char ip[16];
+  snprintf(ip, sizeof(ip), "%d.%d.%d.%d", addr[0], addr[1], addr[2], addr[3]);
+  snprintf(MQTT_STATE_TOPIC, sizeof(MQTT_STATE_TOPIC), "device/%s/led/state", ip);
+  snprintf(MQTT_COMMAND_TOPIC, sizeof(MQTT_COMMAND_TOPIC), "device/%s/led/command", ip);
+  snprintf(MQTT_LIGHT_TOPIC, sizeof(MQTT_LIGHT_TOPIC), "device/%s/light/state", ip);
+  snprintf(MQTT_STATUS_TOPIC, sizeof(MQTT_STATUS_TOPIC), "device/%s/status", ip);
 
   Serial.print("MQTT broker: ");
   Serial.println(MQTT_BROKER);
@@ -136,7 +140,7 @@ void loop() {
     static unsigned long lastReconnect = 0;
     if (now - lastReconnect > 1000) {
       lastReconnect = now;
-      if (mqttClient.connect("esp32")) {
+      if (mqttClient.connect("esp32", MQTT_STATUS_TOPIC, 0, true, "offline")) {
         mqttClient.subscribe(MQTT_COMMAND_TOPIC);
         publishState();
         Serial.println("MQTT connected!");
