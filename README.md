@@ -15,7 +15,8 @@ Next.js                 NestJS                 ESP32
 ### ESP32 Setup
 
 ```bash
-WIFI_SSID="My WiFi" WIFI_PASS="MyPass" make agent-start
+make agent-setup WIFI_SSID="My WiFi" WIFI_PASS="MyPass"
+make agent-start
 make agent-log
 ```
 
@@ -126,7 +127,6 @@ Use `make mqtt` to start the broker. For iot-agent MQTT, set `MQTT_BROKER` to yo
   - linux:
     - `sudo apt-get install -y usbutils`
     - `lsusb`
-- get ip on windows: `ipconfig`
 
 **WSL/Ubuntu CLI workflow:**
 ```bash
