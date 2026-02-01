@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import * as mqtt from 'mqtt';
 import { BehaviorSubject, Observable } from 'rxjs';
 
@@ -21,25 +21,41 @@ function parseDeviceIdFromTopic(topic: string): string | null {
 
 @Injectable()
 export class MqttService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(MqttService.name);
   private client: mqtt.MqttClient | null = null;
   private devices = new Map<string, RealtimeState>();
   private readonly stateSubject = new BehaviorSubject<DevicesState>({});
 
   onModuleInit() {
     const url = process.env.MQTT_URL || 'mqtt://localhost:1883';
+    this.logger.log(`Connecting to MQTT: ${url}`);
     this.client = mqtt.connect(url);
     this.client.on('connect', () => {
+      this.logger.log('MQTT connected');
       this.client!.subscribe(LED_STATE_PATTERN);
       this.client!.subscribe(LIGHT_STATE_PATTERN);
       this.client!.subscribe(STATUS_PATTERN);
+    });
+    this.client.on('error', (err) => {
+      this.logger.error(`MQTT error: ${err.message}`);
+    });
+    this.client.on('offline', () => {
+      this.logger.warn('MQTT offline');
     });
     this.client.on('message', (topic, payload) => {
       const deviceId = parseDeviceIdFromTopic(topic);
       if (!deviceId) return;
 
       if (topic.endsWith('/status')) {
-        if (payload.toString().toLowerCase() === 'offline') {
+        const status = payload.toString().toLowerCase();
+        if (status === 'offline') {
           this.devices.delete(deviceId);
+          this.emitState();
+        } else if (status === 'online') {
+          const current = this.devices.get(deviceId) ?? { led: null, light: null };
+          const isNew = !this.devices.has(deviceId);
+          this.devices.set(deviceId, current);
+          if (isNew) this.logger.log(`Device seen: ${deviceId} (status: online)`);
           this.emitState();
         }
         return;
@@ -61,7 +77,9 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
         current.light = raw === 'on' ? 'on' : raw === 'off' ? 'off' : null;
       }
 
+      const isNew = !this.devices.has(deviceId);
       this.devices.set(deviceId, current);
+      if (isNew) this.logger.log(`Device seen: ${deviceId} (topic: ${topic})`);
       this.emitState();
     });
   }
