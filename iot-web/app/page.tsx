@@ -17,7 +17,9 @@ export default function Home() {
   const [realtimeDeviceId, setRealtimeDeviceId] = useState<string>('');
   const [devicesState, setDevicesState] = useState<DevicesState>({});
   const [realtimeConnected, setRealtimeConnected] = useState(false);
+  const [alerts, setAlerts] = useState<Array<{ id: string; deviceId: string; type: 'connected' | 'disconnected' }>>([]);
   const socketRef = useRef<ReturnType<typeof createRealtimeSocket> | null>(null);
+  const prevDeviceIdsRef = useRef<Set<string>>(new Set());
 
   const validateIp = (ip: string): boolean => {
     const pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
@@ -73,6 +75,18 @@ export default function Home() {
       setRealtimeConnected(false);
     });
     socket.on('state', (payload: DevicesState) => {
+      const nextIds = new Set(Object.keys(payload ?? {}));
+      const prev = prevDeviceIdsRef.current;
+      if (prev.size > 0) {
+        const added = [...nextIds].filter((id) => !prev.has(id));
+        const removed = [...prev].filter((id) => !nextIds.has(id));
+        setAlerts((a) => [
+          ...a,
+          ...added.map((deviceId) => ({ id: `${deviceId}-c-${Date.now()}`, deviceId, type: 'connected' as const })),
+          ...removed.map((deviceId) => ({ id: `${deviceId}-d-${Date.now()}`, deviceId, type: 'disconnected' as const })),
+        ]);
+      }
+      prevDeviceIdsRef.current = nextIds;
       setDevicesState(payload ?? {});
     });
 
@@ -101,6 +115,13 @@ export default function Home() {
     }
   }, [devicesState, realtimeDeviceId]);
 
+  useEffect(() => {
+    if (alerts.length === 0) return;
+    const id = alerts[alerts.length - 1].id;
+    const t = setTimeout(() => setAlerts((a) => a.filter((x) => x.id !== id)), 4000);
+    return () => clearTimeout(t);
+  }, [alerts]);
+
   const knownDeviceIds = Object.keys(devicesState).sort();
   const realtimeState: RealtimeStateType | null = realtimeDeviceId
     ? devicesState[realtimeDeviceId] ?? null
@@ -109,6 +130,20 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
+      <div className="fixed top-0 left-0 right-0 z-50 p-3 flex flex-col gap-2 pointer-events-none">
+        {alerts.map((alert) => (
+          <div
+            key={alert.id}
+            className={`mx-auto max-w-md w-full px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium text-white animate-in slide-in-from-top-2 duration-300 ${
+              alert.type === 'connected'
+                ? 'bg-emerald-600/95 border border-emerald-500/50'
+                : 'bg-amber-600/95 border border-amber-500/50'
+            }`}
+          >
+            Device {alert.deviceId} {alert.type === 'connected' ? 'connected' : 'disconnected'}
+          </div>
+        ))}
+      </div>
       <div className="flex flex-col md:flex-row gap-8 w-full max-w-2xl">
         <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-8 flex-1">
           <h2 className="text-xl font-bold text-white mb-4">HTTP</h2>
