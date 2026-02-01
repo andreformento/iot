@@ -151,6 +151,7 @@ void loop() {
       snprintf(clientId, sizeof(clientId), "esp32-%s", deviceIp);
       if (mqttClient.connect(clientId, MQTT_STATUS_TOPIC, 0, true, "offline")) {
         mqttClient.subscribe(MQTT_COMMAND_TOPIC);
+        mqttClient.publish(MQTT_STATUS_TOPIC, "online", true);  /* retained: API discovers device on subscribe */
         publishState();
         Serial.println("MQTT connected!");
       } else {

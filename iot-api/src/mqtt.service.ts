@@ -47,8 +47,15 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       if (!deviceId) return;
 
       if (topic.endsWith('/status')) {
-        if (payload.toString().toLowerCase() === 'offline') {
+        const status = payload.toString().toLowerCase();
+        if (status === 'offline') {
           this.devices.delete(deviceId);
+          this.emitState();
+        } else if (status === 'online') {
+          const current = this.devices.get(deviceId) ?? { led: null, light: null };
+          const isNew = !this.devices.has(deviceId);
+          this.devices.set(deviceId, current);
+          if (isNew) this.logger.log(`Device seen: ${deviceId} (status: online)`);
           this.emitState();
         }
         return;
