@@ -128,6 +128,7 @@ void setup() {
   Serial.print("MQTT broker: ");
   Serial.println(MQTT_BROKER);
   mqttClient.setServer(MQTT_BROKER, 1883);
+  mqttClient.setKeepAlive(5);
   mqttClient.setCallback(mqttCallback);
 }
 

@@ -12,6 +12,12 @@ export interface RealtimeState {
 /** State keyed by device IP (from MQTT topics device/<IP>/...) */
 export type DevicesState = Record<string, RealtimeState>;
 
+/** Payload emitted by API on 'state' (includes server timestamp for alerts) */
+export interface StatePayload {
+  devices: DevicesState;
+  timestamp: number;
+}
+
 export function createRealtimeSocket(): Socket {
   return io(API_URL, {
     path: '/realtime',

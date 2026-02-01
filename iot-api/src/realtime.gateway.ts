@@ -20,17 +20,23 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
 
   afterInit() {
     this.mqttService.state$.subscribe((state: DevicesState) => {
-      this.server.emit('state', state);
+      this.server.emit('state', { devices: state, timestamp: Date.now() });
     });
   }
 
   handleConnection(client: import('socket.io').Socket) {
-    client.emit('state', this.mqttService.getState());
+    client.emit('state', {
+      devices: this.mqttService.getState(),
+      timestamp: Date.now(),
+    });
   }
 
   @SubscribeMessage('getState')
   handleGetState(client: import('socket.io').Socket) {
-    client.emit('state', this.mqttService.getState());
+    client.emit('state', {
+      devices: this.mqttService.getState(),
+      timestamp: Date.now(),
+    });
   }
 
   @SubscribeMessage('command')
