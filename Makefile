@@ -21,18 +21,14 @@ agent-start:
 	[ -n "$(MQTT_BROKER)" ] && export MQTT_BROKER="$(MQTT_BROKER)"; \
 	[ -n "$(PORT)" ] && export PORT="$(PORT)"; \
 	test -n "$$WIFI_SSID" || { echo "ERROR: WIFI_SSID required"; exit 1; }; \
-	test -n "$$WIFI_PASS" || { echo "ERROR: WIFI_PASS required"; exit 1; }; \
 	test -n "$$MQTT_BROKER" || { echo "ERROR: MQTT_BROKER required"; exit 1; }; \
 	test -n "$$PORT" || { echo "ERROR: PORT required (run make agent-setup)"; exit 1; }; \
 	pio run && pio run -t upload --upload-port "$$PORT" && cd .. && $(MAKE) agent-log
 
 agent-log:
 	@cd iot-agent && set -a && [ -f .env ] && . ./.env && set +a && \
-	[ -n "$(WIFI_SSID)" ] && export WIFI_SSID="$(WIFI_SSID)"; \
-	[ -n "$(WIFI_PASS)" ] && export WIFI_PASS="$(WIFI_PASS)"; \
-	[ -n "$(MQTT_BROKER)" ] && export MQTT_BROKER="$(MQTT_BROKER)"; \
 	[ -n "$(PORT)" ] && export PORT="$(PORT)"; \
-	pio device monitor --port "$${PORT:-/dev/ttyACM0}" --baud 115200
+	pio device monitor --port "$${PORT}" --baud 115200
 
 agent-ports:
 	@ls /dev/tty* 2>/dev/null | grep -E 'USB|ACM' || echo "No serial ports (USB/ACM) found."
