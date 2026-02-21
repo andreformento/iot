@@ -6,3 +6,48 @@ services:
     volumes:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
     command: ["/usr/sbin/mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
+    healthcheck:
+      test: ["CMD", "mosquitto_pub", "-h", "127.0.0.1", "-p", "1883", "-t", "healthcheck", "-m", "ping", "-q", "0"]
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 0s
+
+  iot-api:
+    build: ./iot-api
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - MQTT_URL=mqtt://mqtt:1883
+      - CORS_ORIGIN=http://${HOST_IP}:3000
+    depends_on:
+      mqtt:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/health || exit 1"]
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 0s
+
+  iot-web:
+    build:
+      context: ./iot-web
+      args:
+        NEXT_PUBLIC_API_URL: http://${HOST_IP}:3001
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    depends_on:
+      iot-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 || exit 1"]
+      interval: 1s
+      timeout: 1s
+      retries: 10
+      start_period: 0s
+
