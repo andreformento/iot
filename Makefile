@@ -1,4 +1,4 @@
-.PHONY: install api-start web-start agent-setup agent-start agent-log agent-ports mqtt test kill clean
+.PHONY: install api-start web-start agent-setup agent-start agent-log agent-ports mqtt docker-env docker-up docker-down test kill clean
 
 install:
 	cd iot-api && npm install
@@ -33,8 +33,17 @@ agent-log:
 agent-ports:
 	@ls /dev/tty* 2>/dev/null | grep -E 'USB|ACM' || echo "No serial ports (USB/ACM) found."
 
+docker-env:
+	@bash scripts/docker-env.sh
+
+docker-up: docker-env
+	docker compose up --build -d
+
+docker-down:
+	docker compose down
+
 mqtt:
-	docker compose up -d
+	docker compose up mqtt -d
 
 test:
 	@cd iot-api && npm test && npm run test:e2e
